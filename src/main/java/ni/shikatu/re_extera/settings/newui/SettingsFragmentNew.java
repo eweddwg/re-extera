@@ -96,11 +96,8 @@ public class SettingsFragmentNew extends BasePreferencesActivityExtended {
         items.add(UItemUtils.setTransparent(UItem.asCustom(IDs.THANKS_ID.getId(), createThanksView()), true));
         items.add(UItemUtils.asShadow());
         items.add(UItem.asButton(IDs.GHOST_MODE_BTN_ID.getId(), this.ghostIcon, Localization.GHOST_MODE));
-        items.add(UItemUtils.asShadow());
         items.add(UItem.asButton(IDs.DELETED_AND_EDITED_MESSAGES_BTN_ID.getId(), this.deletedIcon, Localization.SPY));
-        items.add(UItemUtils.asShadow());
         items.add(UItem.asButton(IDs.CUSTOMIZATION_BTN_ID.getId(), this.customizationIcon, Localization.CUSTOMIZATION));
-        items.add(UItemUtils.asShadow());
         items.add(UItem.asButton(IDs.ADDITIONAL_BTN_ID.getId(), this.additionalIcon, Localization.OTHER));
         items.add(UItemUtils.asShadow());
         items.add(UItem.asShadow(LocaleUtils.fullyFormatText(String.format("**Version: %s**", Main.VERSION))));
