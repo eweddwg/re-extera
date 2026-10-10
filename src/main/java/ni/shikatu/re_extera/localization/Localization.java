@@ -208,7 +208,7 @@ public class Localization {
             YES = "Да";
             NO = "Нет";
             CUSTOM_PREFIX = "Метка удаленок";
-            LEAVE_BLANK_FOR_RECYCLE = "Оставьте пустым для иконки 🗑️";
+            LEAVE_BLANK_FOR_RECYCLE = "Оставьте пустым для иконки корзины";
             GHOST_MODE = "Режим призрака";
             UNLIMITED = "Безлимит";
             DELETED_AND_EDITED_MESSAGES = "Измененные и удаленные сообщения";
@@ -378,7 +378,7 @@ public class Localization {
             YES = "Так";
             NO = "Ні";
             CUSTOM_PREFIX = "Позначка видалених";
-            LEAVE_BLANK_FOR_RECYCLE = "Залиште порожнім для іконки 🗑️";
+            LEAVE_BLANK_FOR_RECYCLE = "Залиште порожнім для значка кошика";
             GHOST_MODE = "Режим привида";
             UNLIMITED = "Безліміт";
             DELETED_AND_EDITED_MESSAGES = "Змінені та видалені повідомлення";
@@ -548,7 +548,7 @@ public class Localization {
         YES = "Yes";
         NO = "No";
         CUSTOM_PREFIX = "Deleted message mark";
-        LEAVE_BLANK_FOR_RECYCLE = "Leave blank for 🗑 icon️";
+        LEAVE_BLANK_FOR_RECYCLE = "Leave blank for the trash bin icon";
         GHOST_MODE = "Ghost mode";
         UNLIMITED = "Unlimited";
         DELETED_AND_EDITED_MESSAGES = "Edited and deleted messages";
