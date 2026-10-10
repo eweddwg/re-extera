@@ -4,12 +4,11 @@ export type TranslationKey =
   | 'channel_release'
   | 'check_updates'
   | 'install_file'
-  | 'update_avail'
+  | 'update_downloaded'
   | 'downloading'
   | 'updated_cache'
   | 'installed'
   | 'channel_switch'
-  | 'up_to_date'
   | 'file_not_found'
   | 'no_official_update'
   | 'copy_logs'
@@ -26,32 +25,33 @@ export type TranslationKey =
   | 'no_dex'
   | 'download_failed'
   | 'dex_settings'
+  | 'loaded'
+  | 'not_loaded'
 
 const strings: Record<TranslationKey, [string, string, string]> = {
-  settings: ['Настройки re:extera', 'Налаштування re:extera', 're:extera Settings'],
-  channel_dev: ['Dev-сборки', 'Dev-білди', 'Dev builds'],
-  channel_release: ['Релизные сборки', 'Релізні білди', 'Release builds'],
+  settings: ['Настройки re:extera', 'Налаштування re:extera', 're:extera settings'],
+  channel_dev: ['Dev-сборки', 'Dev-збірки', 'Dev builds'],
+  channel_release: ['Релизные сборки', 'Релізні збірки', 'Release builds'],
   check_updates: ['Проверить обновления', 'Перевірити оновлення', 'Check for updates'],
   install_file: ['Установить из файла', 'Встановити з файлу', 'Install from file'],
-  update_avail: [
-    'Доступна новая версия re:extera! Перезапустите приложение для применения обновления.',
-    'Доступна нова версія re:extera! Перезапустіть додаток для застосування оновлення.',
-    'New re:extera version available! Restart the app to apply the update.',
+  update_downloaded: [
+    'Обновление скачано! Перезапустите приложение, чтобы применить его.',
+    'Оновлення завантажено! Перезапустіть застосунок, щоб застосувати його.',
+    'Update downloaded! Restart the app to apply it.',
   ],
-  downloading: ['Загрузка...', 'Завантаження...', 'Downloading...'],
+  downloading: ['Скачивание...', 'Завантаження...', 'Downloading...'],
   updated_cache: ['Обновлено из кеша', 'Оновлено з кешу', 'Updated from cache'],
-  installed: ['Установка завершена', 'Встановлення завершено', 'Install completed'],
+  installed: ['Установка завершена', 'Встановлення завершено', 'Installation complete'],
   channel_switch: [
     'Канал изменён. Перезапустите приложение.',
-    'Канал змінено. Перезапустіть додаток.',
+    'Канал змінено. Перезапустіть застосунок.',
     'Channel changed. Restart the app.',
   ],
-  up_to_date: ['Уже последняя версия', 'Вже остання версія', 'Already up to date'],
   file_not_found: ['Файл не найден', 'Файл не знайдено', 'File not found'],
   no_official_update: [
-    're:extera ещё не имеет официального обновления для этой версии, возможны баги.',
-    're:extera ще не має офіційного оновлення для цієї версії, можливі баги.',
-    "re:extera doesn't have official update for this version, expect bugs.",
+    'Для этой версии ещё нет официального обновления re:extera, возможны баги.',
+    'Для цієї версії ще немає офіційного оновлення re:extera, можливі баги.',
+    "re:extera doesn't have an official update for this version yet, so expect bugs.",
   ],
   copy_logs: ['Скопировать логи', 'Скопіювати логи', 'Copy logs'],
   logs_copied: [
@@ -60,17 +60,19 @@ const strings: Record<TranslationKey, [string, string, string]> = {
     'Logs copied to clipboard',
   ],
   update_channel: ['Канал обновлений', 'Канал оновлень', 'Update channel'],
-  select_version: ['Выбрать версию', 'Вибрати версію', 'Select Version'],
-  select_tg_version: ['Выберите версию Telegram', 'Виберіть версію Telegram', 'Select Telegram Version'],
-  select_release: ['Выберите релиз', 'Виберіть реліз', 'Select Release'],
-  select_branch: ['Выберите ветку', 'Виберіть гілку', 'Select Branch'],
-  select_dev_build: ['Выберите сборку', 'Виберіть збірку', 'Select Build'],
+  select_version: ['Выбрать версию', 'Вибрати версію', 'Select version'],
+  select_tg_version: ['Выберите версию Telegram', 'Виберіть версію Telegram', 'Select Telegram version'],
+  select_release: ['Выберите релиз', 'Виберіть реліз', 'Select release'],
+  select_branch: ['Выберите ветку', 'Виберіть гілку', 'Select branch'],
+  select_dev_build: ['Выберите сборку', 'Виберіть збірку', 'Select build'],
   no_releases: ['Релизы не найдены', 'Релізи не знайдено', 'No releases found'],
   no_branches: ['Ветки не найдены', 'Гілки не знайдено', 'No branches found'],
-  no_runs: ['Сборки не найдены', 'Збірки не знайдено', 'No runs found'],
+  no_runs: ['Сборки не найдены', 'Збірки не знайдено', 'No builds found'],
   no_dex: ['В этом релизе нет DEX', 'У цьому релізі немає DEX', 'No DEX in this release'],
-  download_failed: ['Ошибка загрузки', 'Помилка завантаження', 'Download failed'],
-  dex_settings: ['Настройки DEX', 'Налаштування DEX', 'DEX Settings'],
+  download_failed: ['Не удалось скачать', 'Не вдалося завантажити', 'Download failed'],
+  dex_settings: ['Настройки DEX', 'Налаштування DEX', 'DEX settings'],
+  loaded: ['Загружен', 'Завантажений', 'Loaded'],
+  not_loaded: ['Не загружен', 'Не завантажений', 'Not loaded'],
 }
 
 export function getLanguage(): string {

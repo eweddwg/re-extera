@@ -127,7 +127,7 @@ class Plugin(BasePlugin):
                 except Exception as e:
                     self.log(f"Failed to fetch Java logs: {e}")
                     
-            plugin_logs = "\n".join(self._logs) if self._logs else "No plugin logs"
+            plugin_logs = "\n".join(self._logs) if self._logs else _localize("no_plugin_logs")
             
             full_logs = "=== Loader Logs ===\n" + plugin_logs
             if java_logs:
@@ -144,7 +144,7 @@ class Plugin(BasePlugin):
         bld = AlertDialogBuilder(context)
         bld.set_title(title)
         bld.set_items(items, on_click)
-        bld.set_negative_button("Cancel", lambda *args: args[0].dismiss() if args else None)
+        bld.set_negative_button(_localize("cancel"), lambda *args: args[0].dismiss() if args else None)
         bld.show()
 
     def _download_and_apply_version(self, version, urls):
@@ -152,10 +152,10 @@ class Plugin(BasePlugin):
         def run_dl():
             try:
                 self.loader.download_and_cache(version, urls)
-                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("update_avail"), get_last_fragment())))
+                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("update_downloaded"), get_last_fragment())))
             except Exception as e:
                 self.log(f"Failed to download version {version}: {e}")
-                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(f"Error: {e}", get_last_fragment())))
+                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("download_failed"), get_last_fragment())))
         threading.Thread(target=run_dl).start()
 
     def _on_select_version(self):
@@ -171,14 +171,14 @@ class Plugin(BasePlugin):
     def _select_dev_branch(self):
         def on_loaded(branches):
             if not branches:
-                BulletinHelper.show_info("No branches found", get_last_fragment())
+                BulletinHelper.show_info(_localize("no_branches"), get_last_fragment())
                 return
             
             def on_click(bld, idx):
                 bld.dismiss()
                 self._select_dev_run(branches[idx])
                 
-            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog("Select Branch", branches, on_click)))
+            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog(_localize("select_branch"), branches, on_click)))
             
         def fetch():
             try:
@@ -194,7 +194,7 @@ class Plugin(BasePlugin):
     def _select_dev_run(self, branch):
         def on_loaded(runs):
             if not runs:
-                BulletinHelper.show_info("No runs found", get_last_fragment())
+                BulletinHelper.show_info(_localize("no_runs"), get_last_fragment())
                 return
             
             run_labels = [f"#{r['id']} - {r['head_commit']['message'][:20]}" for r in runs]
@@ -207,7 +207,7 @@ class Plugin(BasePlugin):
                 dev_url = DEV_RUN_URL_TEMPLATE.format(run_id)
                 self._download_and_apply_version(str(run_id), (dev_url, None))
                 
-            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog("Select Build", run_labels, on_click)))
+            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog(_localize("select_dev_build"), run_labels, on_click)))
             
         def fetch():
             try:
@@ -223,7 +223,7 @@ class Plugin(BasePlugin):
     def _select_release_tg_version(self):
         def on_loaded(releases_by_tg, current_tg):
             if not releases_by_tg:
-                BulletinHelper.show_info("No releases found", get_last_fragment())
+                BulletinHelper.show_info(_localize("no_releases"), get_last_fragment())
                 return
             
             tg_versions = list(releases_by_tg.keys())
@@ -237,7 +237,7 @@ class Plugin(BasePlugin):
                 bld.dismiss()
                 self._select_release_build(releases_by_tg[tg_versions[idx]], tg_versions[idx] == current_tg)
                 
-            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog("Select Telegram Version", labels, on_click)))
+            AndroidUtilities.runOnUIThread(UIRunnable(lambda: self._show_list_dialog(_localize("select_tg_version"), labels, on_click)))
             
         def fetch():
             try:
@@ -290,15 +290,15 @@ class Plugin(BasePlugin):
             if dex_url:
                 self._download_and_apply_version(tag, (dex_url, plugin_url))
             else:
-                BulletinHelper.show_info("No DEX in this release", get_last_fragment())
+                BulletinHelper.show_info(_localize("no_dex"), get_last_fragment())
                 
-        self._show_list_dialog("Select Release", labels, on_click)
+        self._show_list_dialog(_localize("select_release"), labels, on_click)
 
     def _open_re_extera_settings(self):
         try:
             if self.loader is None or self.loader.dex_main_class is None:
                 self.log("DEX not loaded")
-                BulletinHelper.show_info("DEX is not loaded", get_last_fragment())
+                BulletinHelper.show_info(_localize("dex_not_loaded"), get_last_fragment())
                 return
             try:
                 show_method = self.loader.dex_main_class.getMethod("showSettingsExternal")

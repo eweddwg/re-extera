@@ -52,7 +52,7 @@ async function pickReleaseVersion(page: inu.ui.UIPage): Promise<void> {
   inu.ui.toast(t('downloading'))
   const success = await dexLoader.downloadRelease(list[buildIdx])
   if (success) {
-    inu.ui.toast(t('update_avail'))
+    inu.ui.toast(t('update_downloaded'))
     page.invalidate()
   } else {
     inu.ui.toast(t('download_failed'))
@@ -92,7 +92,7 @@ async function pickDevBuild(page: inu.ui.UIPage): Promise<void> {
   inu.ui.toast(t('downloading'))
   const success = await dexLoader.downloadDevRun(runs[runIdx].id)
   if (success) {
-    inu.ui.toast(t('update_avail'))
+    inu.ui.toast(t('update_downloaded'))
     page.invalidate()
   } else {
     inu.ui.toast(t('download_failed'))
@@ -107,7 +107,7 @@ export function setupSettingsUI(): void {
     items: () => {
       const channelIndex = configManager.channel === 'dev' ? 1 : 0
       const verText = `DEX: ${dexLoader.version}`
-      const statusText = dexLoader.isLoaded() ? 'Loaded' : 'Not Loaded'
+      const statusText = dexLoader.isLoaded() ? t('loaded') : t('not_loaded')
 
       return [
         ui.header('re:extera'),
@@ -139,10 +139,10 @@ export function setupSettingsUI(): void {
             ui.toast(t('downloading'))
             const success = await dexLoader.downloadLatest()
             if (success) {
-              ui.toast(t('update_avail'))
+              ui.toast(t('update_downloaded'))
               page.invalidate()
             } else {
-              ui.toast(t('up_to_date'))
+              ui.toast(t('download_failed'))
             }
           },
         }),

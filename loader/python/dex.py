@@ -330,7 +330,7 @@ class Loader:
                 with open(dl_path, "wb") as f:
                     f.write(plugin_bytes)
                 self.plugin.log(f"Elyx update saved to {dl_path}")
-                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info("re:extera .elyx update downloaded to Downloads directory! Please install from file.", get_last_fragment())))
+                AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("elyx_saved"), get_last_fragment())))
                 return
 
             plugin_path = __file__
@@ -450,18 +450,19 @@ class Loader:
                 def run_download():
                     try:
                         self.download_and_cache(remote_version, download_url)
-                        AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("update_avail"), get_last_fragment())))
+                        AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("update_downloaded"), get_last_fragment())))
                     except Exception as e:
-                        AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(f"Update failed: {e}", get_last_fragment())))
+                        self.plugin.log(f"Update failed: {e}")
+                        AndroidUtilities.runOnUIThread(UIRunnable(lambda: BulletinHelper.show_info(_localize("download_failed"), get_last_fragment())))
                 threading.Thread(target=run_download).start()
 
             def on_ui():
                 context = get_last_fragment().getParentActivity()
                 bld = AlertDialogBuilder(context)
-                bld.set_title(f"re:extera has updated to version {remote_version}")
+                bld.set_title(_localize("update_title").format(version=remote_version))
                 bld.set_message(changelog_text)
-                bld.set_positive_button("Update", do_update)
-                bld.set_negative_button("Later", lambda *args: args[0].dismiss() if args else None)
+                bld.set_positive_button(_localize("update"), do_update)
+                bld.set_negative_button(_localize("later"), lambda *args: args[0].dismiss() if args else None)
                 bld.show()
                 
             AndroidUtilities.runOnUIThread(UIRunnable(on_ui))
@@ -469,7 +470,7 @@ class Loader:
         def fetch_changelog():
             try:
                 if not cached or cached == "0":
-                    show_dialog("No previous version found to compare.")
+                    show_dialog(_localize("no_prev_version"))
                     return
                 
                 base = str(cached)
@@ -482,7 +483,7 @@ class Loader:
                     base = base_run.get("head_sha", base)
                 
                 if base == head:
-                    show_dialog("No changes.")
+                    show_dialog(_localize("no_changes"))
                     return
                     
                 compare_url = f"https://api.github.com/repos/fossSquad/re-extera/compare/{base}...{head}"
@@ -497,13 +498,13 @@ class Loader:
                     log_lines.append(f"- {msg} ({author})")
                 
                 if not log_lines:
-                    changelog_text = "No commits found in compare."
+                    changelog_text = _localize("no_commits")
                 else:
                     changelog_text = "\n".join(log_lines)
                 show_dialog(changelog_text)
             except Exception as e:
                 self.plugin.log(f"Failed to fetch changelog: {e}")
-                show_dialog("Changelog unavailable.")
+                show_dialog(_localize("no_changelog"))
                 
         threading.Thread(target=fetch_changelog).start()
 
@@ -529,7 +530,7 @@ class Loader:
                     if self._needs_update(remote_version):
                         self.download_and_cache(remote_version, download_url)
                         def show_success():
-                            BulletinHelper.show_info(_localize("update_avail"), get_last_fragment())
+                            BulletinHelper.show_info(_localize("update_downloaded"), get_last_fragment())
                         AndroidUtilities.runOnUIThread(UIRunnable(show_success))
                     else:
                         def show_uptodate():
