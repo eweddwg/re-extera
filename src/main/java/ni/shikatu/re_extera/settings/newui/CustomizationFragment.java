@@ -281,7 +281,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         ChatMessageCell chatMessageCell = new ChatMessageCell(getContext(), UserConfig.selectedAccount);
         
         TLRPC.TL_message replyMsg = new TLRPC.TL_message();
-        replyMsg.message = "are you using re:extera?";
+        replyMsg.message = Localization.PREVIEW_ASK;
         replyMsg.out = true;
         replyMsg.id = 2;
         TLRPC.TL_peerUser replyFromUser = new TLRPC.TL_peerUser();
@@ -290,7 +290,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         MessageObject replyMessageObject = new MessageObject(UserConfig.selectedAccount, replyMsg, true, false);
         
         TLRPC.TL_message msg = new TLRPC.TL_message();
-        msg.message = "sure, best plugin ever trust";
+        msg.message = Localization.PREVIEW_REPLY;
         msg.date = (int) (System.currentTimeMillis() / 1000);
         msg.dialog_id = -999999999L;
         msg.flags = 259 | 8;
@@ -366,7 +366,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         items.add(UItemUtils.setLinkAlias(UItem.asCustom(CustomizationIds.CUSTOM_DELETED_MARK_ID.getId(), customMarkView()), "reExteraCustomDeletedMark", this));
         items.add(UItemUtils.asShadow());
         
-        items.add(UItem.asHeader("Deleted Mark Color"));
+        items.add(UItem.asHeader(Localization.DELETED_MARK_COLOR));
         items.add(UItem.asCustom(CustomizationIds.DELETED_MARK_COLOR_ID.getId(), colorSelectorView()));
         items.add(UItemUtils.asShadow());
 

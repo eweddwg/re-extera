@@ -155,6 +155,9 @@ public class Localization {
     public static String SHADOWBAN_ABOUT;
     public static String SPY;
     public static String CUSTOMIZATION;
+    public static String DELETED_MARK_COLOR;
+    public static String PREVIEW_ASK;
+    public static String PREVIEW_REPLY;
     public static String THANKS;
     public static String TYPE;
     public static String TYPE_TO;
@@ -304,6 +307,9 @@ public class Localization {
             GHOST_IN_DRAWER = "Кнопка призрака в боковом меню";
             SPY = "Шпион";
             CUSTOMIZATION = "Кастомизация";
+            DELETED_MARK_COLOR = "Цвет метки удаленок";
+            PREVIEW_ASK = "пользуешься re:extera?";
+            PREVIEW_REPLY = "конечно, лучший плагин, отвечаю";
             GHOST_MODE_ENABLE = "Включить призрака";
             GHOST_MODE_DISABLE = "Выключить призрака";
             ADD_SETTINGS_TO_DRAWER = "Настройки в боковом меню";
@@ -471,6 +477,9 @@ public class Localization {
             GHOST_IN_DRAWER = "Кнопка привида в бічному меню";
             SPY = "Шпигун";
             CUSTOMIZATION = "Кастомізація";
+            DELETED_MARK_COLOR = "Колір позначки видалених";
+            PREVIEW_ASK = "користуєшся re:extera?";
+            PREVIEW_REPLY = "звісно, найкращий плагін, повір";
             GHOST_MODE_ENABLE = "Увімкнути привида";
             GHOST_MODE_DISABLE = "Вимкнути привида";
             ADD_SETTINGS_TO_DRAWER = "Налаштування в бічному меню";
@@ -638,6 +647,9 @@ public class Localization {
         GHOST_IN_DRAWER = "Ghost button in side menu";
         SPY = "Spy";
         CUSTOMIZATION = "Customization";
+        DELETED_MARK_COLOR = "Deleted Mark Color";
+        PREVIEW_ASK = "are you using re:extera?";
+        PREVIEW_REPLY = "sure, best plugin ever trust";
         GHOST_MODE_ENABLE = "Enable ghost";
         GHOST_MODE_DISABLE = "Disable ghost";
         ADD_SETTINGS_TO_DRAWER = "Settings in side menu";
