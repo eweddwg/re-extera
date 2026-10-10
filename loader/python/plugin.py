@@ -68,8 +68,6 @@ class Plugin(BasePlugin):
             on_click=lambda v: self._on_install_file()
         ))
         
-        items.append(Divider())
-        
         items.append(Text(
             text=_localize("copy_logs"),
             icon="msg_copy",
