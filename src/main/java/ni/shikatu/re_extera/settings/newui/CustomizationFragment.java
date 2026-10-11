@@ -10,10 +10,12 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.EditTextSettingsCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
@@ -42,7 +45,6 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
     private enum CustomizationIds {
         TRANSPARENT_DELETED_MESSAGES_PREVIEW_ID,
         CUSTOM_DELETED_MARK_ID,
-        DELETED_MARK_EMOJI_ID,
         DELETED_MARK_COLOR_HEADER_ID,
         DELETED_MARK_COLOR_ID,
         DISABLE_COLORED_REPLIES_ID,
@@ -61,6 +63,8 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     private ChatMessageCell previewCell;
     private LinearLayout colorsLayout;
+    private ImageView deletedMarkEmojiButton;
+    private AnimatedEmojiDrawable deletedMarkEmojiButtonDrawable;
     private static final int EMOJI_PICKER_TYPE_STATUS = 0;
 
     private void refreshPreview() {
@@ -265,6 +269,12 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         FrameLayout frameLayout = new FrameLayout(getContext());
         EditTextSettingsCell customPrefix = new EditTextSettingsCell(getContext());
         customPrefix.setTextAndHint(Settings.getCustomPrefix(), Localization.LEAVE_BLANK_FOR_RECYCLE, false);
+        customPrefix.getTextView().setPadding(
+                customPrefix.getTextView().getPaddingLeft(),
+                customPrefix.getTextView().getPaddingTop(),
+                AndroidUtilities.dp(56),
+                customPrefix.getTextView().getPaddingBottom()
+        );
         customPrefix.getTextView().addTextChangedListener(new TextWatcher() { 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -283,7 +293,41 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
             public void afterTextChanged(Editable s) {}
         });
         frameLayout.addView(customPrefix);
+
+        ImageView emojiButton = new ImageView(getContext());
+        emojiButton.setContentDescription(Localization.DELETED_MARK_EMOJI);
+        emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        emojiButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
+        emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+        emojiButton.setOnClickListener(this::showDeletedMarkEmojiPicker);
+        bindDeletedMarkEmojiButton(emojiButton);
+        frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         return frameLayout;
+    }
+
+    private void bindDeletedMarkEmojiButton(ImageView button) {
+        if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
+            deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
+        }
+        deletedMarkEmojiButton = button;
+        deletedMarkEmojiButtonDrawable = null;
+
+        long emojiId = Settings.getDeletedMarkEmojiId();
+        if (emojiId == 0L) {
+            button.setImageResource(Res.drawable("input_smile", org.telegram.messenger.R.drawable.input_smile));
+            button.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
+            return;
+        }
+        try {
+            AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, 0, emojiId);
+            button.clearColorFilter();
+            button.setImageDrawable(drawable);
+            drawable.addView(button);
+            deletedMarkEmojiButtonDrawable = drawable;
+        } catch (Throwable ignored) {
+            button.setImageResource(Res.drawable("input_smile", org.telegram.messenger.R.drawable.input_smile));
+            button.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
+        }
     }
 
     private void showDeletedMarkEmojiPicker(View anchor) {
@@ -402,7 +446,6 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         
         items.add(UItem.asHeader(Localization.CUSTOM_PREFIX));
         items.add(UItemUtils.setLinkAlias(UItem.asCustom(CustomizationIds.CUSTOM_DELETED_MARK_ID.getId(), customMarkView()), "reExteraCustomDeletedMark", this));
-        items.add(UItemUtils.setLinkAlias(UItem.asButton(CustomizationIds.DELETED_MARK_EMOJI_ID.getId(), Localization.DELETED_MARK_EMOJI, Settings.getDeletedMarkEmojiId() == 0L ? Localization.DEFAULT : Localization.YES), "reExteraDeletedMarkEmoji", this));
         items.add(UItemUtils.asShadow());
         
         items.add(UItem.asHeader("Deleted Mark Color"));
@@ -435,9 +478,6 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         }
         CustomizationIds clicked = CustomizationIds.values()[item.id - 1];
         switch (clicked) {
-            case DELETED_MARK_EMOJI_ID:
-                showDeletedMarkEmojiPicker(view);
-                break;
             case DISABLE_COLORED_REPLIES_ID:
                 Settings.setDisableColoredReplies(!Settings.getDisableColoredReplies());
                 refreshCheckBox(item, position, Settings.getDisableColoredReplies(), true);
@@ -461,6 +501,11 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     @Override
     public void onFragmentDestroy() {
+        if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
+            deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
+        }
+        deletedMarkEmojiButton = null;
+        deletedMarkEmojiButtonDrawable = null;
         if (fragmentView != null) {
             fragmentView.clearFocus();
             AndroidUtilities.hideKeyboard(fragmentView);
