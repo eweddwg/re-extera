@@ -8,3 +8,5 @@ loader/builds/
 loader/typescript/node_modules/
 loader/typescript/.inu/
 loader/typescript/.inu.config.*
+TODO.md
+*.bak
