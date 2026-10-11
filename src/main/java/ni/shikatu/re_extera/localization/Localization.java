@@ -23,6 +23,8 @@ public class Localization {
     public static String COPIED;
     public static String COPY_FILTER;
     public static String CUSTOM_PREFIX;
+    public static String DELETED_MARK_EMOJI;
+    public static String DEFAULT;
     public static String DELETE;
     public static String DELETED_AND_EDITED_MESSAGES;
     public static String DELETED_MESSAGES_TITLE;
@@ -205,7 +207,9 @@ public class Localization {
             YES = "Да";
             NO = "Нет";
             CUSTOM_PREFIX = "Метка удаленок";
-            LEAVE_BLANK_FOR_RECYCLE = "Оставьте пустым для иконки 🗑️";
+            DELETED_MARK_EMOJI = "Эмодзи для метки удаленок";
+            DEFAULT = "По умолчанию";
+            LEAVE_BLANK_FOR_RECYCLE = "Оставьте пустым для выбранного эмодзи или иконки 🗑️";
             GHOST_MODE = "Режим призрака";
             UNLIMITED = "Безлимит";
             DELETED_AND_EDITED_MESSAGES = "Измененные и удаленные сообщения";
@@ -372,7 +376,9 @@ public class Localization {
             YES = "Так";
             NO = "Ні";
             CUSTOM_PREFIX = "Позначка видалених";
-            LEAVE_BLANK_FOR_RECYCLE = "Залиште порожнім для іконки 🗑️";
+            DELETED_MARK_EMOJI = "Емодзі для позначки видалених";
+            DEFAULT = "Типова";
+            LEAVE_BLANK_FOR_RECYCLE = "Залиште порожнім для вибраного емодзі або іконки 🗑️";
             GHOST_MODE = "Режим привида";
             UNLIMITED = "Безліміт";
             DELETED_AND_EDITED_MESSAGES = "Змінені та видалені повідомлення";
@@ -539,7 +545,9 @@ public class Localization {
         YES = "Yes";
         NO = "No";
         CUSTOM_PREFIX = "Deleted message mark";
-        LEAVE_BLANK_FOR_RECYCLE = "Leave blank for 🗑 icon️";
+        DELETED_MARK_EMOJI = "Emoji for deleted-message mark";
+        DEFAULT = "Default";
+        LEAVE_BLANK_FOR_RECYCLE = "Leave blank for selected emoji or 🗑 icon";
         GHOST_MODE = "Ghost mode";
         UNLIMITED = "Unlimited";
         DELETED_AND_EDITED_MESSAGES = "Edited and deleted messages";

@@ -365,6 +365,14 @@ public final class Settings {
         putString("custom_prefix", v);
     }
 
+    public static long getDeletedMarkEmojiId() {
+        return getLong("deleted_mark_emoji_id", 0L);
+    }
+
+    public static void setDeletedMarkEmojiId(long v) {
+        putLong("deleted_mark_emoji_id", v);
+    }
+
     public static int getDeletedMarkColor() {
         return getInt("deleted_mark_color", 0);
     }

@@ -4,9 +4,13 @@ import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.style.ForegroundColorSpan;
+import android.view.View;
 import com.exteragram.messenger.utils.text.LocaleUtils;
 import de.robv.android.xposed.XC_MethodHook;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.WeakHashMap;
 import ni.shikatu.re_extera.db.ReExteraDb;
 import ni.shikatu.re_extera.hooks.connectionsmanager.SendRequest;
 import ni.shikatu.re_extera.settings.Settings;
@@ -16,10 +20,12 @@ import ni.shikatu.re_extera.utils.ServerReadTracker;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 
 public class MeasureTime extends XC_MethodHook {
     public static Drawable deletedIcon;
@@ -30,6 +36,9 @@ public class MeasureTime extends XC_MethodHook {
     private static final Field TIME_TEXT_WIDTH = field(ChatMessageCell.class, "timeTextWidth");
     private static final Field TIME_WIDTH = field(ChatMessageCell.class, "timeWidth");
     private static final Field CHAT_TIME_PAINT = field(Theme.class, "chat_timePaint");
+    private static final int EMOJI_DRAWABLE_CACHE_MESSAGES = 0;
+    private static final Map<ChatMessageCell, AnimatedEmojiDrawable> deletedEmojiDrawables = new WeakHashMap<>();
+    private static final Map<ChatMessageCell, View.OnAttachStateChangeListener> deletedEmojiListeners = new WeakHashMap<>();
     public static String mark = Settings.getCustomPrefix();
 
     private static Field field(Class<?> clazz, String name) {
@@ -123,8 +132,9 @@ public class MeasureTime extends XC_MethodHook {
             builderTime.insert(0, (CharSequence) prefix);
             ReflectionUtils.set(CURRENT_TIME_STRING, cell, builderTime);
             int extraWidth;
-            if (deletedIcon != null && prefix.toString().contains("....")) {
-                extraWidth = AndroidUtilities.dp(16) + (int) Math.ceil(paint.measureText(" "));
+            ColoredImageSpan[] imageSpans = prefix.getSpans(0, prefix.length(), ColoredImageSpan.class);
+            if (imageSpans != null && imageSpans.length > 0) {
+                extraWidth = imageSpans[0].getSize(paint, prefix, 0, prefix.length(), paint.getFontMetricsInt()) + (int) Math.ceil(paint.measureText(" "));
             } else {
                 extraWidth = (int) Math.ceil(paint.measureText(prefix, 0, prefix.length()));
             }
@@ -139,6 +149,7 @@ public class MeasureTime extends XC_MethodHook {
             return;
         }
 
+        unbindDeletedEmojiDrawable(cell);
         handleIncomingReadStatus(cell, obj, did, mid);
     }
 
@@ -277,8 +288,19 @@ public class MeasureTime extends XC_MethodHook {
     private static SpannableStringBuilder buildPrefix(ChatMessageCell cell, TextPaint paint) {
         SpannableStringBuilder builder;
         if (mark != null && !mark.isEmpty()) {
+            unbindDeletedEmojiDrawable(cell);
             builder = new SpannableStringBuilder(LocaleUtils.fullyFormatText(mark));
+        } else if (Settings.getDeletedMarkEmojiId() != 0L) {
+            long documentId = Settings.getDeletedMarkEmojiId();
+            AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, EMOJI_DRAWABLE_CACHE_MESSAGES, documentId);
+            bindDeletedEmojiDrawable(cell, drawable);
+            builder = new SpannableStringBuilder(".");
+            ColoredImageSpan span = new ColoredImageSpan(drawable);
+            span.recolorDrawable = false;
+            span.setRelativeSize(paint.getFontMetricsInt());
+            builder.setSpan(span, 0, builder.length(), 33);
         } else if (deletedIcon != null) {
+            unbindDeletedEmojiDrawable(cell);
             builder = new SpannableStringBuilder("....");
             ColoredImageSpan span = new ColoredImageSpan(deletedIcon);
             if (Settings.getDeletedMarkColor() != 0) {
@@ -287,11 +309,61 @@ public class MeasureTime extends XC_MethodHook {
             span.setRelativeSize(paint.getFontMetricsInt());
             builder.setSpan(span, 0, builder.length(), 33);
         } else {
+            unbindDeletedEmojiDrawable(cell);
             return null;
         }
-        if (Settings.getDeletedMarkColor() != 0) {
+        if (Settings.getDeletedMarkColor() != 0 && Settings.getDeletedMarkEmojiId() == 0L) {
             builder.setSpan(new ForegroundColorSpan(Settings.getDeletedMarkColor()), 0, builder.length(), 33);
         }
         return builder;
+    }
+
+    private static synchronized void bindDeletedEmojiDrawable(ChatMessageCell cell, AnimatedEmojiDrawable drawable) {
+        AnimatedEmojiDrawable oldDrawable = deletedEmojiDrawables.put(cell, drawable);
+        if (oldDrawable != null && oldDrawable != drawable) {
+            oldDrawable.removeView(cell);
+        }
+        drawable.addView(cell);
+        if (!deletedEmojiListeners.containsKey(cell)) {
+            WeakReference<ChatMessageCell> cellReference = new WeakReference<>(cell);
+            View.OnAttachStateChangeListener listener = new View.OnAttachStateChangeListener() {
+                @Override
+                public void onViewAttachedToWindow(View view) {
+                    ChatMessageCell attachedCell = cellReference.get();
+                    if (attachedCell == null) {
+                        return;
+                    }
+                    AnimatedEmojiDrawable attachedDrawable = deletedEmojiDrawables.get(attachedCell);
+                    if (attachedDrawable != null) {
+                        attachedDrawable.addView(attachedCell);
+                    }
+                }
+
+                @Override
+                public void onViewDetachedFromWindow(View view) {
+                    ChatMessageCell detachedCell = cellReference.get();
+                    if (detachedCell == null) {
+                        return;
+                    }
+                    AnimatedEmojiDrawable detachedDrawable = deletedEmojiDrawables.get(detachedCell);
+                    if (detachedDrawable != null) {
+                        detachedDrawable.removeView(detachedCell);
+                    }
+                }
+            };
+            deletedEmojiListeners.put(cell, listener);
+            cell.addOnAttachStateChangeListener(listener);
+        }
+    }
+
+    private static synchronized void unbindDeletedEmojiDrawable(ChatMessageCell cell) {
+        AnimatedEmojiDrawable drawable = deletedEmojiDrawables.remove(cell);
+        if (drawable != null) {
+            drawable.removeView(cell);
+        }
+        View.OnAttachStateChangeListener listener = deletedEmojiListeners.remove(cell);
+        if (listener != null) {
+            cell.removeOnAttachStateChangeListener(listener);
+        }
     }
 }

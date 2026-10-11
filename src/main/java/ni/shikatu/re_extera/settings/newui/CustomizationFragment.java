@@ -25,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -33,6 +34,7 @@ import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.SelectAnimatedEmojiDialog;
 import ni.shikatu.re_extera.settings.components.AltSeekbar;
 
 public class CustomizationFragment extends BasePreferencesActivityExtended {
@@ -40,6 +42,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
     private enum CustomizationIds {
         TRANSPARENT_DELETED_MESSAGES_PREVIEW_ID,
         CUSTOM_DELETED_MARK_ID,
+        DELETED_MARK_EMOJI_ID,
         DELETED_MARK_COLOR_HEADER_ID,
         DELETED_MARK_COLOR_ID,
         DISABLE_COLORED_REPLIES_ID,
@@ -58,6 +61,14 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     private ChatMessageCell previewCell;
     private LinearLayout colorsLayout;
+    private static final int EMOJI_PICKER_TYPE_STATUS = 0;
+
+    private void refreshPreview() {
+        if (previewCell != null && previewCell.getMessageObject() != null) {
+            previewCell.getMessageObject().forceUpdate = true;
+            previewCell.setMessageObject(previewCell.getMessageObject(), null, false, false, false);
+        }
+    }
 
     private void updateColorsSelection() {
         if (colorsLayout == null) return;
@@ -260,12 +271,12 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.length() > 0) {
+                    Settings.setDeletedMarkEmojiId(0L);
+                }
                 Settings.setCustomPrefix(s.toString());
                 MeasureTime.notifyMarkChanged(Settings.getCustomPrefix());
-                if (previewCell != null && previewCell.getMessageObject() != null) {
-                    previewCell.getMessageObject().forceUpdate = true;
-                    previewCell.setMessageObject(previewCell.getMessageObject(), null, false, false, false);
-                }
+                refreshPreview();
             }
 
             @Override
@@ -273,6 +284,33 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         });
         frameLayout.addView(customPrefix);
         return frameLayout;
+    }
+
+    private void showDeletedMarkEmojiPicker(View anchor) {
+        final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
+        SelectAnimatedEmojiDialog picker = new SelectAnimatedEmojiDialog(this, getContext(), true, null, EMOJI_PICKER_TYPE_STATUS, getResourceProvider()) {
+            @Override
+            public void onEmojiSelected(View view, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
+                if (gift != null) {
+                    return;
+                }
+                Settings.setDeletedMarkEmojiId(documentId == null ? 0L : documentId.longValue());
+                Settings.setCustomPrefix("");
+                MeasureTime.notifyMarkChanged("");
+                refreshPreview();
+                listView.adapter.update(true);
+                if (popup[0] != null) {
+                    popup[0].dismiss();
+                }
+            }
+        };
+        long emojiId = Settings.getDeletedMarkEmojiId();
+        picker.setSelected(emojiId == 0L ? null : Long.valueOf(emojiId));
+        picker.setLongPressEnabled(false);
+        popup[0] = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow(picker, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) {
+        };
+        popup[0].showAsDropDown(anchor);
+        popup[0].dimBehind();
     }
 
     private FrameLayout previewView() {
@@ -364,6 +402,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         
         items.add(UItem.asHeader(Localization.CUSTOM_PREFIX));
         items.add(UItemUtils.setLinkAlias(UItem.asCustom(CustomizationIds.CUSTOM_DELETED_MARK_ID.getId(), customMarkView()), "reExteraCustomDeletedMark", this));
+        items.add(UItemUtils.setLinkAlias(UItem.asButton(CustomizationIds.DELETED_MARK_EMOJI_ID.getId(), Localization.DELETED_MARK_EMOJI, Settings.getDeletedMarkEmojiId() == 0L ? Localization.DEFAULT : Localization.YES), "reExteraDeletedMarkEmoji", this));
         items.add(UItemUtils.asShadow());
         
         items.add(UItem.asHeader("Deleted Mark Color"));
@@ -396,6 +435,9 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         }
         CustomizationIds clicked = CustomizationIds.values()[item.id - 1];
         switch (clicked) {
+            case DELETED_MARK_EMOJI_ID:
+                showDeletedMarkEmojiPicker(view);
+                break;
             case DISABLE_COLORED_REPLIES_ID:
                 Settings.setDisableColoredReplies(!Settings.getDisableColoredReplies());
                 refreshCheckBox(item, position, Settings.getDisableColoredReplies(), true);
