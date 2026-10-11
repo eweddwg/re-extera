@@ -70,7 +70,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
     private boolean deletedMarkEmojiReset;
     private static final int EMOJI_PICKER_TYPE_STATUS = 0;
     private static final int EMOJI_BUTTON_CACHE_TYPE = 7;
-    private static final long EMOJI_RESET_HOLD_DELAY_MS = 2000L;
+    private static final long EMOJI_RESET_HOLD_DELAY_MS = 500L;
 
     private void refreshPreview() {
         if (previewCell != null && previewCell.getMessageObject() != null) {
