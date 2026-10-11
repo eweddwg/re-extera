@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -65,8 +66,11 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
     private LinearLayout colorsLayout;
     private ImageView deletedMarkEmojiButton;
     private AnimatedEmojiDrawable deletedMarkEmojiButtonDrawable;
+    private Runnable deletedMarkEmojiResetRunnable;
+    private boolean deletedMarkEmojiReset;
     private static final int EMOJI_PICKER_TYPE_STATUS = 0;
     private static final int EMOJI_BUTTON_CACHE_TYPE = 7;
+    private static final long EMOJI_RESET_HOLD_DELAY_MS = 2000L;
 
     private void refreshPreview() {
         if (previewCell != null && previewCell.getMessageObject() != null) {
@@ -284,6 +288,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() > 0) {
                     Settings.setDeletedMarkEmojiId(0L);
+                    bindDeletedMarkEmojiButton(deletedMarkEmojiButton);
                 }
                 Settings.setCustomPrefix(s.toString());
                 MeasureTime.notifyMarkChanged(Settings.getCustomPrefix());
@@ -300,13 +305,40 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
         emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
-        emojiButton.setOnClickListener(this::showDeletedMarkEmojiPicker);
+        emojiButton.setOnClickListener(view -> {
+            if (deletedMarkEmojiReset) {
+                deletedMarkEmojiReset = false;
+                return;
+            }
+            showDeletedMarkEmojiPicker(view);
+        });
+        emojiButton.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                deletedMarkEmojiReset = false;
+                deletedMarkEmojiResetRunnable = () -> {
+                    if (view.isPressed()) {
+                        deletedMarkEmojiReset = true;
+                        resetDeletedMarkEmoji();
+                    }
+                };
+                view.postDelayed(deletedMarkEmojiResetRunnable, EMOJI_RESET_HOLD_DELAY_MS);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                if (deletedMarkEmojiResetRunnable != null) {
+                    view.removeCallbacks(deletedMarkEmojiResetRunnable);
+                    deletedMarkEmojiResetRunnable = null;
+                }
+            }
+            return false;
+        });
         bindDeletedMarkEmojiButton(emojiButton);
         frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         return frameLayout;
     }
 
     private void bindDeletedMarkEmojiButton(ImageView button) {
+        if (button == null) {
+            return;
+        }
         if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
             deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
         }
@@ -329,6 +361,12 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
             button.setImageResource(Res.drawable("input_smile", org.telegram.messenger.R.drawable.input_smile));
             button.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
         }
+    }
+
+    private void resetDeletedMarkEmoji() {
+        Settings.setDeletedMarkEmojiId(0L);
+        bindDeletedMarkEmojiButton(deletedMarkEmojiButton);
+        refreshPreview();
     }
 
     private void showDeletedMarkEmojiPicker(View anchor) {
@@ -502,6 +540,10 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     @Override
     public void onFragmentDestroy() {
+        if (deletedMarkEmojiButton != null && deletedMarkEmojiResetRunnable != null) {
+            deletedMarkEmojiButton.removeCallbacks(deletedMarkEmojiResetRunnable);
+        }
+        deletedMarkEmojiResetRunnable = null;
         if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
             deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
         }
