@@ -9,6 +9,7 @@ import ni.shikatu.re_extera.utils.AccountUtils;
 import ni.shikatu.re_extera.utils.InternalUtils;
 import ni.shikatu.re_extera.utils.MessageUtils;
 import ni.shikatu.re_extera.utils.ServerReadTracker;
+import ni.shikatu.re_extera.hooks.userconfig.isPremium;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -45,6 +46,10 @@ public class SendRequest extends XC_MethodHook {
                 statusUpdate.offline = true;
             }
         }
+        if (request instanceof TL_account.updateEmojiStatus && isPremium.isEnabledForAccount(currentAccount)) {
+            handleLocalEmojiStatus(param, currentAccount, (TL_account.updateEmojiStatus) request);
+            return;
+        }
         if (Settings.getReadOnInteract() && isInteractionRequest(request)) {
             dispatchReadOnInteract(currentAccount, request);
             return;
@@ -68,6 +73,23 @@ public class SendRequest extends XC_MethodHook {
             }
             param.setResult((Object) null);
         }
+    }
+
+    private static void handleLocalEmojiStatus(XC_MethodHook.MethodHookParam param, int account, TL_account.updateEmojiStatus request) {
+        isPremium.cacheEmojiStatus(account, request.emoji_status);
+        RequestDelegate delegate = param.args.length > 1 && param.args[1] instanceof RequestDelegate ? (RequestDelegate) param.args[1] : null;
+        if (delegate != null) {
+            try {
+                org.telegram.messenger.Utilities.stageQueue.postRunnable(() -> {
+                    try {
+                        delegate.run(new TLRPC.TL_boolTrue(), null);
+                    } catch (Throwable ignored) {
+                    }
+                });
+            } catch (Throwable ignored) {
+            }
+        }
+        param.setResult((Object) null);
     }
 
     public void afterHookedMethod(XC_MethodHook.MethodHookParam param) {

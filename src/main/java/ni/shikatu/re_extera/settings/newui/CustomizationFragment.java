@@ -10,10 +10,13 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
@@ -25,14 +28,17 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.EditTextSettingsCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.SelectAnimatedEmojiDialog;
 import ni.shikatu.re_extera.settings.components.AltSeekbar;
 
 public class CustomizationFragment extends BasePreferencesActivityExtended {
@@ -58,6 +64,20 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     private ChatMessageCell previewCell;
     private LinearLayout colorsLayout;
+    private ImageView deletedMarkEmojiButton;
+    private AnimatedEmojiDrawable deletedMarkEmojiButtonDrawable;
+    private Runnable deletedMarkEmojiResetRunnable;
+    private boolean deletedMarkEmojiReset;
+    private static final int EMOJI_PICKER_TYPE_STATUS = 0;
+    private static final int EMOJI_BUTTON_CACHE_TYPE = 7;
+    private static final long EMOJI_RESET_HOLD_DELAY_MS = 500L;
+
+    private void refreshPreview() {
+        if (previewCell != null && previewCell.getMessageObject() != null) {
+            previewCell.getMessageObject().forceUpdate = true;
+            previewCell.setMessageObject(previewCell.getMessageObject(), null, false, false, false);
+        }
+    }
 
     private void updateColorsSelection() {
         if (colorsLayout == null) return;
@@ -254,25 +274,126 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
         FrameLayout frameLayout = new FrameLayout(getContext());
         EditTextSettingsCell customPrefix = new EditTextSettingsCell(getContext());
         customPrefix.setTextAndHint(Settings.getCustomPrefix(), Localization.LEAVE_BLANK_FOR_RECYCLE, false);
+        customPrefix.getTextView().setPadding(
+                customPrefix.getTextView().getPaddingLeft(),
+                customPrefix.getTextView().getPaddingTop(),
+                AndroidUtilities.dp(56),
+                customPrefix.getTextView().getPaddingBottom()
+        );
         customPrefix.getTextView().addTextChangedListener(new TextWatcher() { 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.length() > 0) {
+                    Settings.setDeletedMarkEmojiId(0L);
+                    bindDeletedMarkEmojiButton(deletedMarkEmojiButton);
+                }
                 Settings.setCustomPrefix(s.toString());
                 MeasureTime.notifyMarkChanged(Settings.getCustomPrefix());
-                if (previewCell != null && previewCell.getMessageObject() != null) {
-                    previewCell.getMessageObject().forceUpdate = true;
-                    previewCell.setMessageObject(previewCell.getMessageObject(), null, false, false, false);
-                }
+                refreshPreview();
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
         frameLayout.addView(customPrefix);
+
+        ImageView emojiButton = new ImageView(getContext());
+        emojiButton.setContentDescription(Localization.DELETED_MARK_EMOJI);
+        emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        emojiButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
+        emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+        emojiButton.setOnClickListener(view -> {
+            if (deletedMarkEmojiReset) {
+                deletedMarkEmojiReset = false;
+                return;
+            }
+            showDeletedMarkEmojiPicker(view);
+        });
+        emojiButton.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                deletedMarkEmojiReset = false;
+                deletedMarkEmojiResetRunnable = () -> {
+                    if (view.isPressed()) {
+                        deletedMarkEmojiReset = true;
+                        resetDeletedMarkEmoji();
+                    }
+                };
+                view.postDelayed(deletedMarkEmojiResetRunnable, EMOJI_RESET_HOLD_DELAY_MS);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                if (deletedMarkEmojiResetRunnable != null) {
+                    view.removeCallbacks(deletedMarkEmojiResetRunnable);
+                    deletedMarkEmojiResetRunnable = null;
+                }
+            }
+            return false;
+        });
+        bindDeletedMarkEmojiButton(emojiButton);
+        frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         return frameLayout;
+    }
+
+    private void bindDeletedMarkEmojiButton(ImageView button) {
+        if (button == null) {
+            return;
+        }
+        if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
+            deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
+        }
+        deletedMarkEmojiButton = button;
+        deletedMarkEmojiButtonDrawable = null;
+
+        long emojiId = Settings.getDeletedMarkEmojiId();
+        if (emojiId == 0L) {
+            button.setImageResource(Res.drawable("input_smile", org.telegram.messenger.R.drawable.input_smile));
+            button.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
+            return;
+        }
+        try {
+            AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, EMOJI_BUTTON_CACHE_TYPE, emojiId);
+            button.clearColorFilter();
+            button.setImageDrawable(drawable);
+            drawable.addView(button);
+            deletedMarkEmojiButtonDrawable = drawable;
+        } catch (Throwable ignored) {
+            button.setImageResource(Res.drawable("input_smile", org.telegram.messenger.R.drawable.input_smile));
+            button.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
+        }
+    }
+
+    private void resetDeletedMarkEmoji() {
+        Settings.setDeletedMarkEmojiId(0L);
+        bindDeletedMarkEmojiButton(deletedMarkEmojiButton);
+        refreshPreview();
+    }
+
+    private void showDeletedMarkEmojiPicker(View anchor) {
+        final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
+        SelectAnimatedEmojiDialog picker = new SelectAnimatedEmojiDialog(this, getContext(), true, null, EMOJI_PICKER_TYPE_STATUS, getResourceProvider()) {
+            @Override
+            public void onEmojiSelected(View view, Long documentId, TLRPC.Document document, TL_stars.TL_starGiftUnique gift, Integer until) {
+                if (gift != null) {
+                    return;
+                }
+                Settings.setDeletedMarkEmojiId(documentId == null ? 0L : documentId.longValue());
+                Settings.setCustomPrefix("");
+                MeasureTime.notifyMarkChanged("");
+                refreshPreview();
+                listView.adapter.update(true);
+                if (popup[0] != null) {
+                    popup[0].dismiss();
+                }
+            }
+        };
+        long emojiId = Settings.getDeletedMarkEmojiId();
+        picker.setSelected(emojiId == 0L ? null : Long.valueOf(emojiId));
+        picker.setLongPressEnabled(false);
+        popup[0] = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow(picker, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) {
+        };
+        popup[0].showAsDropDown(anchor);
+        popup[0].dimBehind();
     }
 
     private FrameLayout previewView() {
@@ -419,6 +540,15 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
 
     @Override
     public void onFragmentDestroy() {
+        if (deletedMarkEmojiButton != null && deletedMarkEmojiResetRunnable != null) {
+            deletedMarkEmojiButton.removeCallbacks(deletedMarkEmojiResetRunnable);
+        }
+        deletedMarkEmojiResetRunnable = null;
+        if (deletedMarkEmojiButtonDrawable != null && deletedMarkEmojiButton != null) {
+            deletedMarkEmojiButtonDrawable.removeView(deletedMarkEmojiButton);
+        }
+        deletedMarkEmojiButton = null;
+        deletedMarkEmojiButtonDrawable = null;
         if (fragmentView != null) {
             fragmentView.clearFocus();
             AndroidUtilities.hideKeyboard(fragmentView);

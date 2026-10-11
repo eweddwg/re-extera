@@ -365,6 +365,14 @@ public final class Settings {
         putString("custom_prefix", v);
     }
 
+    public static long getDeletedMarkEmojiId() {
+        return getLong("deleted_mark_emoji_id", 0L);
+    }
+
+    public static void setDeletedMarkEmojiId(long v) {
+        putLong("deleted_mark_emoji_id", v);
+    }
+
     public static int getDeletedMarkColor() {
         return getInt("deleted_mark_color", 0);
     }
@@ -491,6 +499,19 @@ public final class Settings {
 
     public static void setCachedPremiumField(int account, String fieldKey, String base64Value) {
         putString("premium_cache_" + account + "_" + fieldKey, base64Value);
+    }
+
+    public static long getLocalPremiumEmojiStatusId(int account) {
+        return getLong("local_premium_emoji_status_" + account, Long.MIN_VALUE);
+    }
+
+    public static int getLocalPremiumEmojiStatusUntil(int account) {
+        return getInt("local_premium_emoji_status_until_" + account, 0);
+    }
+
+    public static void setLocalPremiumEmojiStatus(int account, long documentId, int until) {
+        putLong("local_premium_emoji_status_" + account, documentId);
+        putInt("local_premium_emoji_status_until_" + account, until);
     }
 
     public static boolean getDisableAds() {
