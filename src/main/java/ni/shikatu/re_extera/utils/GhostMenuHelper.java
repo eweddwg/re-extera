@@ -52,6 +52,7 @@ public final class GhostMenuHelper {
     private static Class<?> pythonClass;
     private static Field mcOfflineSentField;
     private static Field mcLastStatusUpdateTimeField;
+    private static Field mcIgnoreSetOnlineField;
 
     static {
         try {
@@ -65,6 +66,12 @@ public final class GhostMenuHelper {
             mcLastStatusUpdateTimeField.setAccessible(true);
         } catch (Throwable t) {
             Main.log("GhostMenuHelper: lastStatusUpdateTime field not found: %s", t.getMessage());
+        }
+        try {
+            mcIgnoreSetOnlineField = MessagesController.class.getDeclaredField("ignoreSetOnline");
+            mcIgnoreSetOnlineField.setAccessible(true);
+        } catch (Throwable t) {
+            Main.log("GhostMenuHelper: ignoreSetOnline field not found: %s", t.getMessage());
         }
     }
 
@@ -295,6 +302,7 @@ public final class GhostMenuHelper {
             UserConfig cfg = UserConfig.getInstance(i);
             if (cfg != null && cfg.isClientActivated()) {
                 final int account = i;
+                setIgnoreSetOnline(account, hideOnline);
                 TL_account.updateStatus req = new TL_account.updateStatus();
                 req.offline = offline;
                 ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {});
@@ -313,6 +321,17 @@ public final class GhostMenuHelper {
                     }
                 });
             }
+        }
+    }
+
+    private static void setIgnoreSetOnline(int account, boolean hideOnline) {
+        if (mcIgnoreSetOnlineField == null) {
+            return;
+        }
+        try {
+            mcIgnoreSetOnlineField.setBoolean(MessagesController.getInstance(account), hideOnline);
+        } catch (Throwable t) {
+            Main.log("GhostMenuHelper.setIgnoreSetOnline: %s", t.getMessage());
         }
     }
 

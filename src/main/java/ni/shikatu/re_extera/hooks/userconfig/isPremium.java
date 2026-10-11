@@ -117,6 +117,64 @@ public class isPremium extends XC_MethodHook {
         }
     }
 
+    public static boolean isEnabledForAccount(int account) {
+        return Settings.getLocalPremium() && Settings.getRealPremium(account) != 1;
+    }
+
+    public static void cacheEmojiStatus(int account, TLRPC.EmojiStatus requestedStatus) {
+        if (!isEnabledForAccount(account) || requestedStatus == null) {
+            return;
+        }
+        if (requestedStatus instanceof TLRPC.TL_emojiStatusEmpty) {
+            Settings.setLocalPremiumEmojiStatus(account, 0L, 0);
+            return;
+        }
+        long documentId = getEmojiStatusDocumentId(requestedStatus);
+        int until = requestedStatus.until;
+        if (documentId <= 0L) {
+            try {
+                TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
+                if (user != null) {
+                    documentId = getEmojiStatusDocumentId(user.emoji_status);
+                    until = user.emoji_status != null ? user.emoji_status.until : 0;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (documentId > 0L) {
+            Settings.setLocalPremiumEmojiStatus(account, documentId, until);
+        }
+    }
+
+    private static long getEmojiStatusDocumentId(TLRPC.EmojiStatus status) {
+        if (status instanceof TLRPC.TL_emojiStatus) {
+            return ((TLRPC.TL_emojiStatus) status).document_id;
+        }
+        if (status instanceof TLRPC.TL_emojiStatusCollectible) {
+            return ((TLRPC.TL_emojiStatusCollectible) status).document_id;
+        }
+        return 0L;
+    }
+
+    private static void applyCachedEmojiStatus(int account, TLRPC.User user) {
+        long documentId = Settings.getLocalPremiumEmojiStatusId(account);
+        if (documentId == Long.MIN_VALUE) {
+            return;
+        }
+        if (documentId == 0L) {
+            user.emoji_status = new TLRPC.TL_emojiStatusEmpty();
+            return;
+        }
+        TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+        status.document_id = documentId;
+        int until = Settings.getLocalPremiumEmojiStatusUntil(account);
+        if (until > 0) {
+            status.flags |= 1;
+            status.until = until;
+        }
+        user.emoji_status = status;
+    }
+
     public static void patchUser(int account, TLRPC.User user) {
         if (user == null || !Settings.getLocalPremium()) {
             return;
@@ -152,6 +210,7 @@ public class isPremium extends XC_MethodHook {
                 user.profile_color = cached;
             }
         }
+        applyCachedEmojiStatus(account, user);
     }
 
     public static void refresh(int account) {

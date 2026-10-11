@@ -11,6 +11,7 @@ import ni.shikatu.re_extera.utils.InternalUtils;
 import ni.shikatu.re_extera.utils.MessageUtils;
 import ni.shikatu.re_extera.utils.ServerReadTracker;
 import ni.shikatu.re_extera.utils.ShadowbanCache;
+import ni.shikatu.re_extera.hooks.userconfig.isPremium;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -76,6 +77,14 @@ public class ProcessUpdates extends XC_MethodHook {
         }
         flushChannelDeleted(channelDeleted, currentAccount);
         param.args[0] = updates;
+    }
+
+    @Override
+    public void afterHookedMethod(XC_MethodHook.MethodHookParam param) {
+        if (!ni.shikatu.re_extera.settings.Settings.getLocalPremium()) {
+            return;
+        }
+        isPremium.refresh(AccountUtils.getCurrentAccount(param.thisObject));
     }
 
     private void flushChannelDeleted(LongSparseArray<ArrayList<Integer>> channelDeleted, final int currentAccount) {

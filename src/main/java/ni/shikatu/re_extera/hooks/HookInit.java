@@ -66,12 +66,8 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.QuickAckDelegate;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.RequestDelegateTimestamp;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.WriteToSocketDelegate;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
@@ -160,10 +156,26 @@ public final class HookInit {
     }
 
     public void startSendRequestHook() {
-        try {
-            this.sendRequestHook = XposedBridge.hookMethod(ConnectionsManager.class.getDeclaredMethod("sendRequestInternal", TLObject.class, RequestDelegate.class, RequestDelegateTimestamp.class, QuickAckDelegate.class, WriteToSocketDelegate.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Boolean.TYPE, Integer.TYPE), new SendRequest());
-        } catch (Throwable e) {
-            Main.log("Failed to hook ConnectionsManager.sendRequestInternal: %s", e.getMessage());
+        int hooked = 0;
+        for (java.lang.reflect.Method method : ConnectionsManager.class.getDeclaredMethods()) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (!"sendRequestInternal".equals(method.getName()) || parameterTypes.length == 0 || !TLObject.class.isAssignableFrom(parameterTypes[0])) {
+                continue;
+            }
+            try {
+                method.setAccessible(true);
+                XC_MethodHook.Unhook unhook = XposedBridge.hookMethod(method, new SendRequest());
+                addHook(unhook);
+                if (this.sendRequestHook == null) {
+                    this.sendRequestHook = unhook;
+                }
+                hooked++;
+            } catch (Throwable e) {
+                Main.log("Failed to hook ConnectionsManager.%s: %s", method.getName(), e.getMessage());
+            }
+        }
+        if (hooked == 0) {
+            Main.log("Failed to find ConnectionsManager.sendRequestInternal", new Object[0]);
         }
     }
 

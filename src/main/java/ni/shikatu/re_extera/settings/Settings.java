@@ -501,6 +501,19 @@ public final class Settings {
         putString("premium_cache_" + account + "_" + fieldKey, base64Value);
     }
 
+    public static long getLocalPremiumEmojiStatusId(int account) {
+        return getLong("local_premium_emoji_status_" + account, Long.MIN_VALUE);
+    }
+
+    public static int getLocalPremiumEmojiStatusUntil(int account) {
+        return getInt("local_premium_emoji_status_until_" + account, 0);
+    }
+
+    public static void setLocalPremiumEmojiStatus(int account, long documentId, int until) {
+        putLong("local_premium_emoji_status_" + account, documentId);
+        putInt("local_premium_emoji_status_until_" + account, until);
+    }
+
     public static boolean getDisableAds() {
         return getBool("disable_ads", false);
     }
