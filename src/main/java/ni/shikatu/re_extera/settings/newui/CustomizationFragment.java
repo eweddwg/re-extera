@@ -66,6 +66,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
     private ImageView deletedMarkEmojiButton;
     private AnimatedEmojiDrawable deletedMarkEmojiButtonDrawable;
     private static final int EMOJI_PICKER_TYPE_STATUS = 0;
+    private static final int EMOJI_BUTTON_CACHE_TYPE = 7;
 
     private void refreshPreview() {
         if (previewCell != null && previewCell.getMessageObject() != null) {
@@ -319,7 +320,7 @@ public class CustomizationFragment extends BasePreferencesActivityExtended {
             return;
         }
         try {
-            AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, 0, emojiId);
+            AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, EMOJI_BUTTON_CACHE_TYPE, emojiId);
             button.clearColorFilter();
             button.setImageDrawable(drawable);
             drawable.addView(button);
